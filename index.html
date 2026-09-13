@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+html{color-scheme:light dark}
+body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>TRB Design Calculator</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+</head>
+<body>
+<style>
+:root{
+  --ground:#F4F6F7; --surface:#FFFFFF; --surface-2:#EDF1F3;
+  --ink:#161B20; --ink-2:#414C56; --muted:#6B7883; --line:#D8DFE4; --line-soft:#E7ECEF;
+  --accent:#1B5E7E; --accent-soft:#E2EEF4;
+  --ok:#2C6A50; --ok-bg:#E2F0E9;
+  --est:#8A5710; --est-bg:#F6ECDA;
+  --bad:#A2372A; --bad-bg:#F7E4E1;
+  --shadow:0 1px 2px rgba(22,27,32,.05), 0 8px 24px -12px rgba(22,27,32,.18);
+}
+:root:not([data-theme="light"]){ }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ground:#0E1317; --surface:#151C22; --surface-2:#1B242B;
+    --ink:#E6ECF1; --ink-2:#B7C3CC; --muted:#8795A1; --line:#27333B; --line-soft:#1F2A31;
+    --accent:#6FBAD9; --accent-soft:#13303D;
+    --ok:#79C79E; --ok-bg:#163024;
+    --est:#D9A85A; --est-bg:#33280F;
+    --bad:#E58A79; --bad-bg:#37201C;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0E1317; --surface:#151C22; --surface-2:#1B242B;
+  --ink:#E6ECF1; --ink-2:#B7C3CC; --muted:#8795A1; --line:#27333B; --line-soft:#1F2A31;
+  --accent:#6FBAD9; --accent-soft:#13303D;
+  --ok:#79C79E; --ok-bg:#163024;
+  --est:#D9A85A; --est-bg:#33280F;
+  --bad:#E58A79; --bad-bg:#37201C;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1220px; margin:0 auto; padding-inline:20px; padding-block:0 64px}
+h1,h2,h3{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",sans-serif; text-wrap:balance; margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums}
+
+/* header */
+header{border-bottom:1px solid var(--line); background:var(--surface); margin-bottom:28px}
+.hd{max-width:1220px; margin:0 auto; padding:18px 20px; display:flex; align-items:baseline; gap:16px; flex-wrap:wrap}
+.hd h1{font-size:21px; font-weight:700; letter-spacing:-.01em}
+.hd .sub{color:var(--muted); font-size:12.5px}
+.hd .spacer{flex:1 1 auto}
+.themebtn{font:inherit; font-size:12px; color:var(--ink-2); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:5px 10px; cursor:pointer}
+.themebtn:hover{border-color:var(--accent); color:var(--accent)}
+
+/* layout */
+.grid{display:grid; grid-template-columns:308px minmax(0,1fr); gap:22px; align-items:start}
+@media (max-width:900px){ .grid{grid-template-columns:1fr} .rail{position:static !important} }
+
+.panel{background:var(--surface); border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow)}
+.rail{position:sticky; top:16px; display:flex; flex-direction:column; gap:14px}
+
+.ptitle{font-family:"IBM Plex Sans Condensed",sans-serif; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); padding:13px 16px 0}
+.pbody{padding:12px 16px 16px; display:flex; flex-direction:column; gap:12px}
+
+label.fl{display:block; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:600; margin-bottom:4px}
+.trio{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px}
+input[type=text],input[type=number]{
+  width:100%; font-family:"IBM Plex Mono",monospace; font-size:15px; font-variant-numeric:tabular-nums;
+  padding:8px 9px; border:1px solid var(--line); border-radius:6px; background:var(--surface-2); color:var(--ink);
+}
+input:focus-visible{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent)}
+.btn{font:inherit; font-weight:600; font-size:13.5px; padding:9px 12px; border-radius:7px; border:1px solid var(--accent);
+  background:var(--accent); color:#fff; cursor:pointer; width:100%}
+:root[data-theme="dark"] .btn{color:#0E1317}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .btn{color:#0E1317} }
+.btn:hover{filter:brightness(1.08)}
+
+.sl{display:flex; flex-direction:column; gap:3px}
+.slhead{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+.slhead b{font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; color:var(--ink)}
+.slhead span{font-size:11px; color:var(--muted)}
+.slval{font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--accent); font-weight:600}
+input[type=range]{width:100%; accent-color:var(--accent); height:18px; margin:0}
+.hint{font-size:11.5px; color:var(--muted); line-height:1.45}
+
+/* result sections */
+.res{display:flex; flex-direction:column; gap:16px}
+.sec{padding:0 0 6px}
+.sechd{display:flex; align-items:baseline; gap:10px; padding:14px 18px 8px; border-bottom:1px solid var(--line-soft); flex-wrap:wrap}
+.sechd h2{font-size:14px; font-weight:700; letter-spacing:.02em}
+.sechd p{margin:0; font-size:11.5px; color:var(--muted)}
+
+.row{display:grid; grid-template-columns:64px minmax(0,1fr) auto 46px; gap:10px; align-items:baseline;
+  padding:7px 18px; border-bottom:1px solid var(--line-soft)}
+.row:last-child{border-bottom:0}
+.row:nth-child(even){background:color-mix(in srgb, var(--surface-2) 55%, transparent)}
+.sym{font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:600; color:var(--accent)}
+.nm{font-size:12.8px; color:var(--ink-2); min-width:0}
+.nm small{display:block; color:var(--muted); font-size:11px; font-family:"IBM Plex Mono",monospace}
+.val{font-family:"IBM Plex Mono",monospace; font-size:14.5px; font-weight:500; font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right}
+.val i{font-style:normal; color:var(--muted); font-size:11px; margin-left:3px}
+.tag{font-family:"IBM Plex Sans Condensed",sans-serif; font-size:9.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+  padding:2px 5px; border-radius:3px; text-align:center; justify-self:end}
+.tag.ok{background:var(--ok-bg); color:var(--ok)}
+.tag.est{background:var(--est-bg); color:var(--est)}
+.tag.usr{background:var(--accent-soft); color:var(--accent)}
+.tag.apx{background:var(--bad-bg); color:var(--bad)}
+.msg.apx{border-color:var(--est); background:var(--est-bg)}
+.msg.apx h2{color:var(--est); font-size:15px; margin-bottom:6px}
+.reflist{font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--ink-2); margin-top:6px; line-height:1.7}
+
+/* headline tiles */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); gap:1px; background:var(--line-soft); border-radius:10px; overflow:hidden; border:1px solid var(--line)}
+.tile{background:var(--surface); padding:13px 15px}
+.tile .k{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600}
+.tile .v{font-family:"IBM Plex Mono",monospace; font-size:23px; font-weight:600; letter-spacing:-.02em; margin-top:2px; font-variant-numeric:tabular-nums}
+.tile .v i{font-style:normal; font-size:12px; color:var(--muted); margin-left:2px}
+
+/* messages */
+.msg{padding:16px 18px; border-radius:10px; border:1px solid var(--line); background:var(--surface); box-shadow:var(--shadow)}
+.msg.err{border-color:var(--bad); background:var(--bad-bg)}
+.msg.err h2{color:var(--bad); font-size:15px; margin-bottom:6px}
+.msg p{margin:0 0 8px; font-size:13px; color:var(--ink-2)}
+.msg p:last-child{margin-bottom:0}
+.chips{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px}
+.chip{font-family:"IBM Plex Mono",monospace; font-size:12px; padding:5px 9px; border-radius:6px; border:1px solid var(--line);
+  background:var(--surface-2); color:var(--ink-2); cursor:pointer}
+.chip:hover{border-color:var(--accent); color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:#fff}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{color:#0E1317}
+.warn{margin:0; padding:9px 18px; font-size:12px; color:var(--est); background:var(--est-bg); border-top:1px solid var(--line-soft)}
+.tablewrap{overflow-x:auto}
+footer{margin-top:26px; font-size:11.5px; color:var(--muted); line-height:1.6}
+footer code{font-family:"IBM Plex Mono",monospace; font-size:11px}
+@media (prefers-reduced-motion:reduce){*{transition:none !important; animation:none !important}}
+</style>
+
+<header>
+  <div class="hd">
+    <h1>TRB Design Calculator</h1>
+    <span class="sub">ISO 355 boundary table &rarr; internal geometry, cage &amp; load ratings &middot; DS&nbsp;43 / DS&nbsp;44 / DS&nbsp;45</span>
+    <span class="spacer"></span>
+    <button class="themebtn" id="theme" type="button">Theme</button>
+  </div>
+</header>
+
+<div class="wrap">
+<div class="grid">
+
+  <div class="rail">
+    <form class="panel" id="form">
+      <div class="ptitle">Bearing lookup</div>
+      <div class="pbody">
+        <div>
+          <label class="fl" for="in_d">Bore d &middot; Outside D &middot; Width T &nbsp;(mm)</label>
+          <div class="trio">
+            <input type="text" id="in_d" inputmode="decimal" autocomplete="off" list="l_d" aria-label="Bore diameter d">
+            <input type="text" id="in_D" inputmode="decimal" autocomplete="off" list="l_D" aria-label="Outside diameter D">
+            <input type="text" id="in_T" inputmode="decimal" autocomplete="off" list="l_T" aria-label="Width T">
+          </div>
+          <datalist id="l_d"></datalist><datalist id="l_D"></datalist><datalist id="l_T"></datalist>
+        </div>
+        <button class="btn" type="submit">Calculate</button>
+        <p class="hint" id="dbcount"></p>
+      </div>
+    </form>
+
+    <div class="panel">
+      <div class="ptitle">Design factors</div>
+      <div class="pbody">
+        <div class="sl">
+          <div class="slhead"><b>k<sub>d</sub></b><span class="slval" id="v_kd"></span></div>
+          <input type="range" id="kd" min="0.25" max="0.65" step="0.005" value="0.45">
+          <div class="slhead"><span>Roller dia ratio &mdash; D<sub>w</sub> = k<sub>d</sub> &middot; (D&minus;d)/2</span></div>
+        </div>
+        <div class="sl">
+          <div class="slhead"><b>k<sub>L</sub></b><span class="slval" id="v_kL"></span></div>
+          <input type="range" id="kL" min="1.0" max="2.2" step="0.01" value="1.50">
+          <div class="slhead"><span>Roller length ratio &mdash; L<sub>we</sub> = k<sub>L</sub> &middot; D<sub>w</sub></span></div>
+        </div>
+        <div class="sl">
+          <div class="slhead"><b>C<sub>R</sub></b><span class="slval" id="v_cr"></span></div>
+          <input type="range" id="cr" min="0.85" max="0.99" step="0.005" value="0.93">
+          <div class="slhead"><span>Cage fill factor for Z &mdash; DS&nbsp;45 gives 0.90&ndash;0.96</span></div>
+        </div>
+        <p class="hint">Tune k<sub>d</sub> until <b>Z</b> matches the roller count you actually use &mdash; everything else follows from it.</p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ptitle">Cage input</div>
+      <div class="pbody">
+        <div>
+          <label class="fl" for="pt">Cage sheet thickness P &nbsp;(1&ndash;10 mm)</label>
+          <input type="number" id="pt" min="1" max="10" step="0.1" value="1.2">
+        </div>
+        <div>
+          <label class="fl" for="cl">Cage-to-cup radial clearance (mm)</label>
+          <input type="number" id="cl" min="0.05" max="3" step="0.05" value="0.4">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="res" id="res"></div>
+</div>
+
+<footer>
+  <p><b>Sources.</b> Geometry from NRB sheets DS&nbsp;45 / CH-337 and DS&nbsp;44 / CH-336 &amp; CH-339. Ratings per ISO&nbsp;76 (C<sub>0r</sub>) and ISO&nbsp;281 (C<sub>r</sub>, b<sub>m</sub>&nbsp;=&nbsp;1.1, f<sub>c</sub> interpolated from the radial-roller table). Boundary data: 481 rows read from <code>TRB ISO SCAN EXCEL.xlsx</code>, series 2&ndash;7.</p>
+  <p><b>Method.</b> The apex radius is recovered exactly from the table: DS&nbsp;45 gives <code>G = 2R&middot;sin&alpha;</code>, and G is the outer raceway large-end diameter E &mdash; so <code>R = E / (2 sin&alpha;)</code>. Only the roller taper angle &gamma; is left open, and that is what k<sub>d</sub> sets. Values tagged <b>EST</b> depend on k<sub>d</sub>, k<sub>L</sub>, C<sub>R</sub> or P; values tagged <b>ISO</b> come straight from the table or from &alpha; alone.</p>
+  <p><b>Check case.</b> 30206 (30&times;62&times;17.25) at the default factors returns Z&nbsp;=&nbsp;17, D<sub>w</sub>&nbsp;=&nbsp;7.20&nbsp;mm, C<sub>r</sub>&nbsp;=&nbsp;42.3&nbsp;kN, C<sub>0r</sub>&nbsp;=&nbsp;46.7&nbsp;kN &mdash; against published catalogue values of 17 rollers, 43.6&nbsp;kN and 50&nbsp;kN.</p>
+</footer>
+</div>
+
+<script src="db.js"></script>
+<script>
+(function(){
+"use strict";
+var DB = window.TRB_DB || [];
+var K={d:0,D:1,T:2,B:3,rs:4,C:5,r1s:6,a:7,aRaw:8,E:9,ds:10};
+var RAD=Math.PI/180, $=function(s){return document.querySelector(s)};
+
+/* ---- theme ---- */
+var tb=$("#theme");
+tb.addEventListener("click",function(){
+  var r=document.documentElement, cur=r.getAttribute("data-theme");
+  var sysDark=window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var nowDark = cur ? cur==="dark" : sysDark;
+  r.setAttribute("data-theme", nowDark ? "light" : "dark");
+  if(state.rows) render();
+});
+
+/* ---- ISO 281 fc table, radial roller bearings ---- */
+var FC=[[0.01,52.1],[0.02,60.8],[0.03,66.5],[0.04,70.7],[0.05,74.1],[0.06,76.9],[0.07,79.2],[0.08,81.2],
+        [0.09,82.8],[0.10,84.2],[0.12,86.4],[0.14,87.7],[0.16,88.5],[0.18,88.8],[0.20,88.7],[0.22,88.2],
+        [0.24,87.5],[0.26,86.4],[0.28,85.2],[0.30,83.8]];
+function fcOf(l){
+  if(l<=FC[0][0]) return FC[0][1];
+  if(l>=FC[FC.length-1][0]) return FC[FC.length-1][1];
+  for(var i=0;i<FC.length-1;i++){
+    var A=FC[i],B=FC[i+1];
+    if(l>=A[0]&&l<=B[0]) return A[1]+(B[1]-A[1])*(l-A[0])/(B[0]-A[0]);
+  }
+  return 85;
+}
+
+/* ---- core calculation ---- */
+function compute(r,f){
+  var a=r[K.a]*RAD, E=r[K.E], D=r[K.D], d=r[K.d];
+  var Ra=E/(2*Math.sin(a));                       // apex radius, DS45 G = 2R sin a
+  var Dw=f.kd*(D-d)/2;                            // roller large-end dia
+  var sg=Dw/(2*Ra); if(sg>=0.9) sg=0.9;
+  var g=Math.asin(sg);                            // roller half-taper angle
+  var b=a-2*g;                                    // inner raceway half angle
+  var Lwe=f.kL*Dw;
+  var F=Ra*(1-Math.cos(g)), F1=Ra*(1-Math.cos(g/2)), Cp=Lwe+F1-F;
+  var Dpw=2*((Ra-F)-Cp/2)*Math.sin(a-g);
+  var Zr=f.cr*Math.PI*(Math.cos(g)/Math.sin(g))*Math.sin(a-g);
+  var Z=Math.max(3,Math.round(Zr));
+  var ORd=2*Ra*Math.sin(a);
+  var IRd=2*Ra*Math.sin(b)/Math.cos(5/16*g);
+  var IDo=IRd+2*(0.45*Dw);                        // inner ring OD over large rib
+  var Rface=0.89*Ra;                              // DS45: 0.85 - 0.93 of apex radius
+  var J=Lwe-(Rface-Math.sqrt(Math.max(0,Rface*Rface-Dw*Dw/4)));
+  var wA=a-g/2;                                   // DS44 note 1
+  var RD=E-2*f.cl;
+  var Rd=RD-2*f.P-2*(J*Math.cos(wA))*Math.tan(wA);
+  var lam=Dw*Math.cos(a)/Dpw;
+  var fc=fcOf(lam);
+  var C0=44*(1-lam)*Z*Lwe*Dw*Math.cos(a);
+  var Cr=1.1*fc*Math.pow(Lwe*Math.cos(a),7/9)*Math.pow(Dw,29/27)*Math.pow(Z,0.75);
+  return {
+    Ra:Ra,Dw:Dw,g:g/RAD,b:b/RAD,a:r[K.a],Lwe:Lwe,Cp:Cp,Dpw:Dpw,Z:Z,Zr:Zr,
+    OR:ORd,IR:IRd,ID:IDo,od:E,J:J,wA:wA/RAD,RD:RD,Rd:Rd,Rpk:0.25*f.P,
+    lam:lam,fc:fc,C0:C0,Cr:Cr,
+    e:1.5*Math.tan(a), Y:0.4/Math.tan(a), Y0:0.5/Math.tan(a),
+    GPmin:1.5*f.P, FPmin:1.75*f.P, idx:(RD<=70?0.2:0.3)
+  };
+}
+
+/* ---- formatting ---- */
+function num(v,p){ if(!isFinite(v)) return "–"; return v.toFixed(p==null?3:p); }
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function row(sym,name,formula,val,unit,tag){
+  return '<div class="row"><span class="sym">'+sym+'</span>'+
+    '<span class="nm">'+name+(formula?'<small>'+formula+'</small>':'')+'</span>'+
+    '<span class="val">'+val+(unit?'<i>'+unit+'</i>':'')+'</span>'+
+    '<span class="tag '+tag[0]+'">'+tag[1]+'</span></div>';
+}
+var ISO=["ok","ISO"], EST=["est","EST"], USR=["usr","INPUT"], APX=["apx","APPROX"];
+
+/* decimal degrees -> d m s string */
+function dms(a){
+  var D=Math.floor(a), m=(a-D)*60, M=Math.floor(m), S=Math.round((m-M)*60);
+  if(S===60){S=0;M++;} if(M===60){M=0;D++;}
+  return D+"° "+(M<10?"0":"")+M+"' "+(S<10?"0":"")+S+'"';
+}
+/* nearest-neighbour estimate for a size that is not in the ISO table */
+function approximate(d,D,T){
+  var sc=DB.map(function(r){
+    var a=(r[K.d]-d)/d, b=(r[K.D]-D)/D, c=(r[K.T]-T)/T;
+    return {r:r,s:Math.sqrt(a*a+b*b+c*c)};
+  }).sort(function(x,y){return x.s-y.s}).slice(0,3);
+  var w=sc.map(function(x){return 1/Math.max(x.s,1e-4)}), sw=w[0]+w[1]+w[2];
+  var wa=function(fn){var t=0; sc.forEach(function(x,i){t+=w[i]*fn(x.r)}); return t/sw;};
+  var Er=wa(function(r){return (r[K.E]-r[K.d])/(r[K.D]-r[K.d])});
+  var al=wa(function(r){return r[K.a]});
+  var Br=wa(function(r){return r[K.B]/r[K.T]});
+  var Cr2=wa(function(r){return r[K.C]/r[K.T]});
+  var row=[d,D,T, +(Br*T).toFixed(2), sc[0].r[K.rs], +(Cr2*T).toFixed(2), sc[0].r[K.r1s],
+           +al.toFixed(5), dms(al)+" (interpolated)", +(d+Er*(D-d)).toFixed(3), sc[0].r[K.ds]+" (nearest)"];
+  return {row:row, refs:sc, dist:sc[0].s};
+}
+
+/* ---- state + render ---- */
+var state={rows:null,pick:0,approx:null};
+function factors(){
+  return {kd:+$("#kd").value, kL:+$("#kL").value, cr:+$("#cr").value,
+          P:Math.min(10,Math.max(1,+$("#pt").value||1.2)), cl:Math.max(0.05,+$("#cl").value||0.4)};
+}
+function render(){
+  $("#v_kd").textContent=(+$("#kd").value).toFixed(3);
+  $("#v_kL").textContent=(+$("#kL").value).toFixed(2);
+  $("#v_cr").textContent=(+$("#cr").value).toFixed(3);
+  var out=$("#res");
+  if(!state.rows){ out.innerHTML=state.err||""; return; }
+  var rows=state.rows, r=rows[Math.min(state.pick,rows.length-1)], f=factors(), c=compute(r,f);
+  var AP=state.approx, TB=AP?APX:ISO, IN=AP?USR:ISO;
+  var h="";
+
+  if(AP){
+    h+='<div class="msg apx"><h2>These values are not in ISO standard</h2>'+
+      '<p>No row in the ISO&nbsp;355 table matches <b>'+r[K.d]+'&times;'+r[K.D]+'&times;'+r[K.T]+'&nbsp;mm</b>. '+
+      'Everything below is an <b>approximation</b> interpolated from the three nearest standard sizes &mdash; '+
+      '&alpha; and the ratios (E&minus;d)/(D&minus;d), B/T and C/T are inverse-distance weighted; r<sub>s</sub> and r<sub>1s</sub> are taken from the closest size. Treat it as a starting point, not a specification.</p>'+
+      '<div class="reflist">interpolated from &nbsp;'+AP.refs.map(function(x){
+        return x.r[K.d]+'&times;'+x.r[K.D]+'&times;'+x.r[K.T]+' <span style="color:var(--muted)">'+esc(x.r[K.ds])+' &middot; '+(x.s*100).toFixed(1)+'% off</span>';
+      }).join('&nbsp; / &nbsp;')+'</div>'+
+      '<p style="margin-top:10px">Or jump to a real standard size:</p><div class="chips">'+
+      AP.refs.map(function(x){return '<button class="chip" type="button" data-go="'+x.r[K.d]+','+x.r[K.D]+','+x.r[K.T]+'">'+x.r[K.d]+'&times;'+x.r[K.D]+'&times;'+x.r[K.T]+'</button>'}).join("")+
+      '</div></div>';
+  }
+
+  if(rows.length>1){
+    h+='<div class="msg"><p><b>'+rows.length+' ISO variants</b> share '+r[K.d]+'&times;'+r[K.D]+'&times;'+r[K.T]+'&nbsp;mm. Pick the dimension series:</p><div class="chips">';
+    rows.forEach(function(x,i){ h+='<button class="chip" type="button" data-pick="'+i+'" aria-pressed="'+(i===state.pick)+'">'+x[K.ds]+' &middot; &alpha; '+esc(x[K.aRaw])+'</button>'; });
+    h+='</div></div>';
+  }
+
+  h+='<div class="tiles">'+
+    '<div class="tile"><div class="k">Rollers Z</div><div class="v">'+c.Z+'</div></div>'+
+    '<div class="tile"><div class="k">Roller dia D<sub>w</sub></div><div class="v">'+num(c.Dw,2)+'<i>mm</i></div></div>'+
+    '<div class="tile"><div class="k">P.C.D. D<sub>pw</sub></div><div class="v">'+num(c.Dpw,2)+'<i>mm</i></div></div>'+
+    '<div class="tile"><div class="k">Dynamic C<sub>r</sub></div><div class="v">'+num(c.Cr/1000,1)+'<i>kN</i></div></div>'+
+    '<div class="tile"><div class="k">Static C<sub>0r</sub></div><div class="v">'+num(c.C0/1000,1)+'<i>kN</i></div></div>'+
+  '</div>';
+
+  h+='<div class="panel sec"><div class="sechd"><h2>'+(AP?'Boundary dimensions (approximated)':'From the ISO 355 table')+'</h2><p>series '+esc(r[K.ds])+' &middot; '+(AP?'interpolated from neighbouring sizes':'read straight from your database')+'</p></div>'+
+    row("d","Bore diameter","",num(r[K.d],2),"mm",IN)+
+    row("D","Outside diameter","",num(r[K.D],2),"mm",IN)+
+    row("T","Bearing width","",num(r[K.T],2),"mm",IN)+
+    row("B","Inner ring width","",num(r[K.B],2),"mm",TB)+
+    row("C","Outer ring width","",num(r[K.C],2),"mm",TB)+
+    row("r<sub>s</sub>","Inner ring chamfer, min","",num(r[K.rs],2),"mm",TB)+
+    row("r<sub>1s</sub>","Outer ring chamfer, min","",num(r[K.r1s],2),"mm",TB)+
+    row("E","Outer ring bore at back face","",num(r[K.E],3),"mm",TB)+
+    row("&alpha;","Contact angle",esc(r[K.aRaw]),num(r[K.a],4),"&deg;",TB)+
+    row("&mdash;","Dimension series","",esc(r[K.ds]),"",TB)+
+  '</div>';
+
+  h+='<div class="panel sec"><div class="sechd"><h2>Internal geometry</h2><p>DS&nbsp;45 / CH-337</p></div>'+
+    row("R","Apex radius","R = E / (2 sin &alpha;)",num(c.Ra,3),"mm",TB)+
+    row("D<sub>w</sub>","Roller dia, large end","D<sub>w</sub> = k<sub>d</sub>(D&minus;d)/2 = 2R sin &gamma;",num(c.Dw,3),"mm",EST)+
+    row("&gamma;","Roller half-taper angle","&gamma; = asin(D<sub>w</sub>/2R)",num(c.g,4),"&deg;",EST)+
+    row("L<sub>we</sub>","Effective roller length","L<sub>we</sub> = k<sub>L</sub> &middot; D<sub>w</sub>",num(c.Lwe,3),"mm",EST)+
+    row("Z","Number of rollers","DS 45: Z = C<sub>R</sub>&middot;2&pi;R cos&gamma;&middot;sin(&alpha;&minus;&gamma;)/D<sub>w</sub>; with D<sub>w</sub>=2R sin&gamma; the R cancels &rarr; Z = C<sub>R</sub>&middot;&pi; cot&gamma;&middot;sin(&alpha;&minus;&gamma;) = "+num(c.Zr,2)+" &mdash; &gamma; is the roller half-taper angle, not the load factor Y",c.Z,"",EST)+
+    row("D<sub>pw</sub>","Roller pitch circle dia","D<sub>pw</sub> = 2[(R&minus;F)&minus;C<sub>p</sub>/2] sin(&alpha;&minus;&gamma;)",num(c.Dpw,3),"mm",EST)+
+    row("gro","Outer track angle","gro = &alpha;",num(c.a,4),"&deg;",TB)+
+    row("OR","Outer track dia, large end","OR = 2R sin &alpha;",num(c.OR,3),"mm",TB)+
+    row("od","Outer ring I.D.","od = E",num(c.od,3),"mm",TB)+
+    row("gri","Inner track angle","gri = &beta; = &alpha; &minus; 2&gamma;",num(c.b,4),"&deg;",EST)+
+    row("IR","Inner track dia, large end","IR = 2R sin &beta; / cos(5/16 &middot; &gamma;)",num(c.IR,3),"mm",EST)+
+    row("ID","Inner ring O.D. over large rib","ID = IR + 2(0.45 D<sub>w</sub>)",num(c.ID,3),"mm",EST)+
+    row("C<sub>p</sub>","Roller cone length","C<sub>p</sub> = L<sub>we</sub> + F<sub>1</sub> &minus; F",num(c.Cp,3),"mm",EST)+
+  '</div>';
+
+  h+='<div class="panel sec"><div class="sechd"><h2>Retainer / cage</h2><p>DS&nbsp;44 &middot; CH-336 &amp; CH-339</p></div>'+
+    row("T<sub>ret</sub>","Cage sheet thickness P","your input",num(f.P,2),"mm",USR)+
+    row("&omega;A","Cage half-cone angle","&omega;A = &alpha; &minus; &gamma;/2",num(c.wA,4),"&deg;",EST)+
+    row("J","Roller length at cage contact","J = L<sub>we</sub> &minus; [R<sub>f</sub> &minus; &radic;(R<sub>f</sub>&sup2; &minus; (D<sub>w</sub>/2)&sup2;)]",num(c.J,3),"mm",EST)+
+    row("RD","Retainer O.D. (large end)","RD = E &minus; 2 &times; clearance",num(c.RD,3),"mm",EST)+
+    row("Rd","Retainer I.D. (small end)","Rd = RD &minus; 2P &minus; 2(J cos &omega;A) tan &omega;A",num(c.Rd,3),"mm",EST)+
+    row("R","Pocket corner radius","R = 0.25 P",num(c.Rpk,3),"mm",USR)+
+    row("GP","Bridge land, minimum","GP &ge; 1.5 P",num(c.GPmin,2),"mm",USR)+
+    row("FP","Pocket land, minimum","FP &ge; 1.75 P",num(c.FPmin,2),"mm",USR)+
+    row("&mdash;","Indexing error limit","0.2 for cage OD &le; &empty;70, else 0.3",num(c.idx,1),"mm",ISO)+
+  '</div>';
+
+  h+='<div class="panel sec"><div class="sechd"><h2>Load factors &amp; ratings</h2><p>DS&nbsp;45, ISO&nbsp;76, ISO&nbsp;281</p></div>'+
+    row("e","Axial load limit factor","e = 1.5 tan &alpha;",num(c.e,4),"",TB)+
+    row("Y","Axial load factor","Y = 0.4 cot &alpha; &mdash; a load factor, unrelated to the roller angle &gamma;",num(c.Y,4),"",TB)+
+    row("Y<sub>0</sub>","Static axial factor","Y<sub>0</sub> = 0.5 cot &alpha;",num(c.Y0,4),"",TB)+
+    row("X","Radial load factor","constant",num(0.4,1),"",ISO)+
+    row("X<sub>0</sub>","Static radial factor","constant",num(0.5,1),"",ISO)+
+    row("&lambda;","Geometry ratio","&lambda; = D<sub>w</sub> cos &alpha; / D<sub>pw</sub>",num(c.lam,4),"",EST)+
+    row("b<sub>m</sub>","Material factor","1.1 for tapered roller bearings",num(1.1,2),"",ISO)+
+    row("f<sub>c</sub>","Rating factor","ISO 281 radial-roller table at &lambda;",num(c.fc,2),"",EST)+
+    row("C<sub>0r</sub>","Static load rating","44(1&minus;&lambda;) Z L<sub>we</sub> D<sub>w</sub> cos &alpha;",num(c.C0/1000,2),"kN",EST)+
+    row("C<sub>r</sub>","Dynamic load rating","b<sub>m</sub> f<sub>c</sub> (L<sub>we</sub> cos &alpha;)<sup>7/9</sup> D<sub>w</sub><sup>29/27</sup> Z<sup>3/4</sup>",num(c.Cr/1000,2),"kN",EST)+
+  '</div>';
+
+  var warns=[];
+  if(c.b<=0) warns.push("Inner track angle β is not positive — k_d is far too high for this contact angle.");
+  if(c.Lwe>r[K.C]) warns.push("Roller length "+num(c.Lwe,2)+" mm exceeds the outer ring width C = "+r[K.C]+" mm. Lower k_L.");
+  if(c.IR<=r[K.d]) warns.push("Inner track diameter has fallen below the bore d. Lower k_d.");
+  if(c.Rd<=r[K.d]) warns.push("Retainer I.D. has fallen below the bore — check cage thickness P and clearance.");
+  if(c.lam>0.30||c.lam<0.01) warns.push("λ = "+num(c.lam,3)+" is outside the ISO 281 f_c table (0.01–0.30); f_c is clamped at the edge value.");
+  if(warns.length) h+='<div class="msg"><p style="color:var(--est);font-weight:600;margin-bottom:6px">Check</p><p>'+warns.map(esc).join("<br>")+'</p></div>';
+
+  out.innerHTML=h;
+  Array.prototype.forEach.call(out.querySelectorAll("[data-pick]"),function(btn){
+    btn.addEventListener("click",function(){ state.pick=+btn.getAttribute("data-pick"); render(); });
+  });
+  Array.prototype.forEach.call(out.querySelectorAll("[data-go]"),function(btn){
+    btn.addEventListener("click",function(){
+      var p=btn.getAttribute("data-go").split(",");
+      $("#in_d").value=p[0]; $("#in_D").value=p[1]; $("#in_T").value=p[2]; refreshLists(); lookup();
+    });
+  });
+}
+
+function lookup(){
+  var d=parseFloat($("#in_d").value), D=parseFloat($("#in_D").value), T=parseFloat($("#in_T").value);
+  if(!isFinite(d)||!isFinite(D)||!isFinite(T)){
+    state.rows=null;
+    state.err='<div class="msg"><p>Enter bore <b>d</b>, outside diameter <b>D</b> and width <b>T</b> in millimetres, then press Calculate.</p></div>';
+    render(); return;
+  }
+  var eps=0.005;
+  var hits=DB.filter(function(r){return Math.abs(r[K.d]-d)<eps&&Math.abs(r[K.D]-D)<eps&&Math.abs(r[K.T]-T)<eps});
+  if(!hits.length){
+    var ap=approximate(d,D,T);
+    state.rows=[ap.row]; state.pick=0; state.err=null; state.approx=ap; render(); return;
+  }
+  state.rows=hits; state.pick=0; state.err=null; state.approx=null; render();
+}
+
+/* ---- datalists ---- */
+function fillList(id,vals){
+  $(id).innerHTML=vals.map(function(v){return '<option value="'+v+'"></option>'}).join("");
+}
+function refreshLists(){
+  var d=parseFloat($("#in_d").value), D=parseFloat($("#in_D").value);
+  var uniq=function(a){return a.filter(function(v,i,s){return s.indexOf(v)===i}).sort(function(x,y){return x-y})};
+  fillList("#l_d",uniq(DB.map(function(r){return r[K.d]})));
+  fillList("#l_D",uniq(DB.filter(function(r){return !isFinite(d)||r[K.d]===d}).map(function(r){return r[K.D]})));
+  fillList("#l_T",uniq(DB.filter(function(r){return (!isFinite(d)||r[K.d]===d)&&(!isFinite(D)||r[K.D]===D)}).map(function(r){return r[K.T]})));
+}
+
+/* ---- wiring ---- */
+$("#form").addEventListener("submit",function(e){e.preventDefault(); lookup();});
+["#in_d","#in_D","#in_T"].forEach(function(s){
+  $(s).addEventListener("input",function(){refreshLists(); lookup();});
+});
+["#kd","#kL","#cr","#pt","#cl"].forEach(function(s){
+  $(s).addEventListener("input",render);
+});
+$("#dbcount").innerHTML=DB.length+" ISO&nbsp;355 sizes loaded, series&nbsp;2&ndash;7.";
+
+/* opens on a real worked example */
+$("#in_d").value="30"; $("#in_D").value="62"; $("#in_T").value="17.25";
+refreshLists(); lookup();
+})();
+</script>
+
+</body>
+</html>
