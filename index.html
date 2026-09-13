@@ -3,12 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-html{color-scheme:light dark}
-body{margin:0}
-img{max-width:100%}
-[hidden]{display:none!important}
-</style>
+<style>html{color-scheme:light dark}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>TRB Design Calculator</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 </head>
@@ -227,8 +222,26 @@ footer code{font-family:"IBM Plex Mono",monospace; font-size:11px}
 <script>
 (function(){
 "use strict";
-var DB = window.TRB_DB || [];
-var K={d:0,D:1,T:2,B:3,rs:4,C:5,r1s:6,a:7,aRaw:8,E:9,ds:10};
+/* Normalise the database. Accepts the current named-field format and the older
+   positional-array format, so a stale db.js can never silently break the lookup. */
+function toDMS(t){
+  var D=Math.floor(t), m=(t-D)*60, M=Math.floor(m), S=Math.round((m-M)*60);
+  if(S===60){S=0;M++;} if(M===60){M=0;D++;}
+  return [D,M,S];
+}
+var DBFORMAT="current";
+var DB = (window.TRB_DB || []).map(function(r){
+  if(Object.prototype.toString.call(r)==="[object Array]"){
+    DBFORMAT="legacy";
+    var p=toDMS(r[7]);
+    r={d:r[0],D:r[1],T:r[2],B:r[3],rs:r[4],C:r[5],r1s:r[6],E:r[9],series:r[10],
+       a:r[7],aRaw:r[8],deg:p[0],min:p[1],sec:p[2]};
+  } else if(typeof r.deg==="number"){
+    r.a=r.deg+r.min/60+r.sec/3600;
+    r.aRaw=r.deg+"\u00b0 "+r.min+"' "+r.sec+'"';
+  } else { DBFORMAT="broken"; }
+  return r;
+}).filter(function(r){ return typeof r.d==="number" && typeof r.E==="number"; });
 var RAD=Math.PI/180, $=function(s){return document.querySelector(s)};
 
 /* ---- theme ---- */
@@ -257,7 +270,7 @@ function fcOf(l){
 
 /* ---- core calculation ---- */
 function compute(r,f){
-  var a=r[K.a]*RAD, E=r[K.E], D=r[K.D], d=r[K.d];
+  var a=r.a*RAD, E=r.E, D=r.D, d=r.d;
   var Ra=E/(2*Math.sin(a));                       // apex radius, DS45 G = 2R sin a
   var Dw=f.kd*(D-d)/2;                            // roller large-end dia
   var sg=Dw/(2*Ra); if(sg>=0.9) sg=0.9;
@@ -281,7 +294,7 @@ function compute(r,f){
   var C0=44*(1-lam)*Z*Lwe*Dw*Math.cos(a);
   var Cr=1.1*fc*Math.pow(Lwe*Math.cos(a),7/9)*Math.pow(Dw,29/27)*Math.pow(Z,0.75);
   return {
-    Ra:Ra,Dw:Dw,g:g/RAD,b:b/RAD,a:r[K.a],Lwe:Lwe,Cp:Cp,Dpw:Dpw,Z:Z,Zr:Zr,
+    Ra:Ra,Dw:Dw,g:g/RAD,b:b/RAD,a:r.a,Lwe:Lwe,Cp:Cp,Dpw:Dpw,Z:Z,Zr:Zr,
     OR:ORd,IR:IRd,ID:IDo,od:E,J:J,wA:wA/RAD,RD:RD,Rd:Rd,Rpk:0.25*f.P,
     lam:lam,fc:fc,C0:C0,Cr:Cr,
     e:1.5*Math.tan(a), Y:0.4/Math.tan(a), Y0:0.5/Math.tan(a),
@@ -309,17 +322,20 @@ function dms(a){
 /* nearest-neighbour estimate for a size that is not in the ISO table */
 function approximate(d,D,T){
   var sc=DB.map(function(r){
-    var a=(r[K.d]-d)/d, b=(r[K.D]-D)/D, c=(r[K.T]-T)/T;
+    var a=(r.d-d)/d, b=(r.D-D)/D, c=(r.T-T)/T;
     return {r:r,s:Math.sqrt(a*a+b*b+c*c)};
   }).sort(function(x,y){return x.s-y.s}).slice(0,3);
   var w=sc.map(function(x){return 1/Math.max(x.s,1e-4)}), sw=w[0]+w[1]+w[2];
   var wa=function(fn){var t=0; sc.forEach(function(x,i){t+=w[i]*fn(x.r)}); return t/sw;};
-  var Er=wa(function(r){return (r[K.E]-r[K.d])/(r[K.D]-r[K.d])});
-  var al=wa(function(r){return r[K.a]});
-  var Br=wa(function(r){return r[K.B]/r[K.T]});
-  var Cr2=wa(function(r){return r[K.C]/r[K.T]});
-  var row=[d,D,T, +(Br*T).toFixed(2), sc[0].r[K.rs], +(Cr2*T).toFixed(2), sc[0].r[K.r1s],
-           +al.toFixed(5), dms(al)+" (interpolated)", +(d+Er*(D-d)).toFixed(3), sc[0].r[K.ds]+" (nearest)"];
+  var Er=wa(function(r){return (r.E-r.d)/(r.D-r.d)});
+  var al=wa(function(r){return r.a});
+  var Br=wa(function(r){return r.B/r.T});
+  var Cr2=wa(function(r){return r.C/r.T});
+  var DG=Math.floor(al), m0=(al-DG)*60, MN=Math.floor(m0), SC=Math.round((m0-MN)*60);
+  if(SC===60){SC=0;MN++;} if(MN===60){MN=0;DG++;}
+  var row={d:d, D:D, T:T, B:+(Br*T).toFixed(2), rs:sc[0].r.rs, C:+(Cr2*T).toFixed(2), r1s:sc[0].r.r1s,
+           deg:DG, min:MN, sec:SC, a:al, aRaw:dms(al)+" (interpolated)",
+           E:+(d+Er*(D-d)).toFixed(3), series:sc[0].r.series+" (nearest)"};
   return {row:row, refs:sc, dist:sc[0].s};
 }
 
@@ -341,20 +357,20 @@ function render(){
 
   if(AP){
     h+='<div class="msg apx"><h2>These values are not in ISO standard</h2>'+
-      '<p>No row in the ISO&nbsp;355 table matches <b>'+r[K.d]+'&times;'+r[K.D]+'&times;'+r[K.T]+'&nbsp;mm</b>. '+
+      '<p>No row in the ISO&nbsp;355 table matches <b>'+r.d+'&times;'+r.D+'&times;'+r.T+'&nbsp;mm</b>. '+
       'Everything below is an <b>approximation</b> interpolated from the three nearest standard sizes &mdash; '+
       '&alpha; and the ratios (E&minus;d)/(D&minus;d), B/T and C/T are inverse-distance weighted; r<sub>s</sub> and r<sub>1s</sub> are taken from the closest size. Treat it as a starting point, not a specification.</p>'+
       '<div class="reflist">interpolated from &nbsp;'+AP.refs.map(function(x){
-        return x.r[K.d]+'&times;'+x.r[K.D]+'&times;'+x.r[K.T]+' <span style="color:var(--muted)">'+esc(x.r[K.ds])+' &middot; '+(x.s*100).toFixed(1)+'% off</span>';
+        return x.r.d+'&times;'+x.r.D+'&times;'+x.r.T+' <span style="color:var(--muted)">'+esc(x.r.series)+' &middot; '+(x.s*100).toFixed(1)+'% off</span>';
       }).join('&nbsp; / &nbsp;')+'</div>'+
       '<p style="margin-top:10px">Or jump to a real standard size:</p><div class="chips">'+
-      AP.refs.map(function(x){return '<button class="chip" type="button" data-go="'+x.r[K.d]+','+x.r[K.D]+','+x.r[K.T]+'">'+x.r[K.d]+'&times;'+x.r[K.D]+'&times;'+x.r[K.T]+'</button>'}).join("")+
+      AP.refs.map(function(x){return '<button class="chip" type="button" data-go="'+x.r.d+','+x.r.D+','+x.r.T+'">'+x.r.d+'&times;'+x.r.D+'&times;'+x.r.T+'</button>'}).join("")+
       '</div></div>';
   }
 
   if(rows.length>1){
-    h+='<div class="msg"><p><b>'+rows.length+' ISO variants</b> share '+r[K.d]+'&times;'+r[K.D]+'&times;'+r[K.T]+'&nbsp;mm. Pick the dimension series:</p><div class="chips">';
-    rows.forEach(function(x,i){ h+='<button class="chip" type="button" data-pick="'+i+'" aria-pressed="'+(i===state.pick)+'">'+x[K.ds]+' &middot; &alpha; '+esc(x[K.aRaw])+'</button>'; });
+    h+='<div class="msg"><p><b>'+rows.length+' ISO variants</b> share '+r.d+'&times;'+r.D+'&times;'+r.T+'&nbsp;mm. Pick the dimension series:</p><div class="chips">';
+    rows.forEach(function(x,i){ h+='<button class="chip" type="button" data-pick="'+i+'" aria-pressed="'+(i===state.pick)+'">'+x.series+' &middot; &alpha; '+esc(x.aRaw)+'</button>'; });
     h+='</div></div>';
   }
 
@@ -366,17 +382,17 @@ function render(){
     '<div class="tile"><div class="k">Static C<sub>0r</sub></div><div class="v">'+num(c.C0/1000,1)+'<i>kN</i></div></div>'+
   '</div>';
 
-  h+='<div class="panel sec"><div class="sechd"><h2>'+(AP?'Boundary dimensions (approximated)':'From the ISO 355 table')+'</h2><p>series '+esc(r[K.ds])+' &middot; '+(AP?'interpolated from neighbouring sizes':'read straight from your database')+'</p></div>'+
-    row("d","Bore diameter","",num(r[K.d],2),"mm",IN)+
-    row("D","Outside diameter","",num(r[K.D],2),"mm",IN)+
-    row("T","Bearing width","",num(r[K.T],2),"mm",IN)+
-    row("B","Inner ring width","",num(r[K.B],2),"mm",TB)+
-    row("C","Outer ring width","",num(r[K.C],2),"mm",TB)+
-    row("r<sub>s</sub>","Inner ring chamfer, min","",num(r[K.rs],2),"mm",TB)+
-    row("r<sub>1s</sub>","Outer ring chamfer, min","",num(r[K.r1s],2),"mm",TB)+
-    row("E","Outer ring bore at back face","",num(r[K.E],3),"mm",TB)+
-    row("&alpha;","Contact angle",esc(r[K.aRaw]),num(r[K.a],4),"&deg;",TB)+
-    row("&mdash;","Dimension series","",esc(r[K.ds]),"",TB)+
+  h+='<div class="panel sec"><div class="sechd"><h2>'+(AP?'Boundary dimensions (approximated)':'From the ISO 355 table')+'</h2><p>series '+esc(r.series)+' &middot; '+(AP?'interpolated from neighbouring sizes':'read straight from your database')+'</p></div>'+
+    row("d","Bore diameter","",num(r.d,2),"mm",IN)+
+    row("D","Outside diameter","",num(r.D,2),"mm",IN)+
+    row("T","Bearing width","",num(r.T,2),"mm",IN)+
+    row("B","Inner ring width","",num(r.B,2),"mm",TB)+
+    row("C","Outer ring width","",num(r.C,2),"mm",TB)+
+    row("r<sub>s</sub>","Inner ring chamfer, min","",num(r.rs,2),"mm",TB)+
+    row("r<sub>1s</sub>","Outer ring chamfer, min","",num(r.r1s,2),"mm",TB)+
+    row("E","Outer ring bore at back face","",num(r.E,3),"mm",TB)+
+    row("&alpha;","Contact angle",esc(r.aRaw),num(r.a,4),"&deg;",TB)+
+    row("&mdash;","Dimension series","",esc(r.series),"",TB)+
   '</div>';
 
   h+='<div class="panel sec"><div class="sechd"><h2>Internal geometry</h2><p>DS&nbsp;45 / CH-337</p></div>'+
@@ -421,10 +437,16 @@ function render(){
   '</div>';
 
   var warns=[];
+  var d0=r.d,D0=r.D,T0=r.T;
+  if(r.E>=D0) warns.push("Source data: E = "+r.E+" is not smaller than D = "+D0+". The outer ring bore cannot equal or exceed the outside diameter \u2014 this row is mis-scanned in the Excel, and every result below is wrong.");
+  if(r.B>T0)  warns.push("Source data: B = "+r.B+" exceeds T = "+T0+". The inner ring cannot be wider than the bearing \u2014 check this row in the Excel.");
+  if(r.C>T0)  warns.push("Source data: C = "+r.C+" exceeds T = "+T0+". The outer ring cannot be wider than the bearing \u2014 check this row in the Excel.");
+  if(r.rs>(D0-d0)/4)  warns.push("Source data: r_s min = "+r.rs+" is impossible for a cross-section of "+((D0-d0)/2).toFixed(1)+" mm.");
+  if(r.r1s>(D0-d0)/4) warns.push("Source data: r_1s min = "+r.r1s+" is impossible for a cross-section of "+((D0-d0)/2).toFixed(1)+" mm.");
   if(c.b<=0) warns.push("Inner track angle β is not positive — k_d is far too high for this contact angle.");
-  if(c.Lwe>r[K.C]) warns.push("Roller length "+num(c.Lwe,2)+" mm exceeds the outer ring width C = "+r[K.C]+" mm. Lower k_L.");
-  if(c.IR<=r[K.d]) warns.push("Inner track diameter has fallen below the bore d. Lower k_d.");
-  if(c.Rd<=r[K.d]) warns.push("Retainer I.D. has fallen below the bore — check cage thickness P and clearance.");
+  if(c.Lwe>r.C) warns.push("Roller length "+num(c.Lwe,2)+" mm exceeds the outer ring width C = "+r.C+" mm. Lower k_L.");
+  if(c.IR<=r.d) warns.push("Inner track diameter has fallen below the bore d. Lower k_d.");
+  if(c.Rd<=r.d) warns.push("Retainer I.D. has fallen below the bore — check cage thickness P and clearance.");
   if(c.lam>0.30||c.lam<0.01) warns.push("λ = "+num(c.lam,3)+" is outside the ISO 281 f_c table (0.01–0.30); f_c is clamped at the edge value.");
   if(warns.length) h+='<div class="msg"><p style="color:var(--est);font-weight:600;margin-bottom:6px">Check</p><p>'+warns.map(esc).join("<br>")+'</p></div>';
 
@@ -441,6 +463,7 @@ function render(){
 }
 
 function lookup(){
+  if(!DB.length) return;
   var d=parseFloat($("#in_d").value), D=parseFloat($("#in_D").value), T=parseFloat($("#in_T").value);
   if(!isFinite(d)||!isFinite(D)||!isFinite(T)){
     state.rows=null;
@@ -448,7 +471,7 @@ function lookup(){
     render(); return;
   }
   var eps=0.005;
-  var hits=DB.filter(function(r){return Math.abs(r[K.d]-d)<eps&&Math.abs(r[K.D]-D)<eps&&Math.abs(r[K.T]-T)<eps});
+  var hits=DB.filter(function(r){return Math.abs(r.d-d)<eps&&Math.abs(r.D-D)<eps&&Math.abs(r.T-T)<eps});
   if(!hits.length){
     var ap=approximate(d,D,T);
     state.rows=[ap.row]; state.pick=0; state.err=null; state.approx=ap; render(); return;
@@ -463,9 +486,9 @@ function fillList(id,vals){
 function refreshLists(){
   var d=parseFloat($("#in_d").value), D=parseFloat($("#in_D").value);
   var uniq=function(a){return a.filter(function(v,i,s){return s.indexOf(v)===i}).sort(function(x,y){return x-y})};
-  fillList("#l_d",uniq(DB.map(function(r){return r[K.d]})));
-  fillList("#l_D",uniq(DB.filter(function(r){return !isFinite(d)||r[K.d]===d}).map(function(r){return r[K.D]})));
-  fillList("#l_T",uniq(DB.filter(function(r){return (!isFinite(d)||r[K.d]===d)&&(!isFinite(D)||r[K.D]===D)}).map(function(r){return r[K.T]})));
+  fillList("#l_d",uniq(DB.map(function(r){return r.d})));
+  fillList("#l_D",uniq(DB.filter(function(r){return !isFinite(d)||r.d===d}).map(function(r){return r.D})));
+  fillList("#l_T",uniq(DB.filter(function(r){return (!isFinite(d)||r.d===d)&&(!isFinite(D)||r.D===D)}).map(function(r){return r.T})));
 }
 
 /* ---- wiring ---- */
@@ -476,7 +499,16 @@ $("#form").addEventListener("submit",function(e){e.preventDefault(); lookup();})
 ["#kd","#kL","#cr","#pt","#cl"].forEach(function(s){
   $(s).addEventListener("input",render);
 });
-$("#dbcount").innerHTML=DB.length+" ISO&nbsp;355 sizes loaded, series&nbsp;2&ndash;7.";
+if(!DB.length){
+  $("#dbcount").innerHTML='<b style="color:var(--bad)">db.js did not load.</b> Put db.js in the same folder as index.html and refresh.';
+  $("#res").innerHTML='<div class="msg err"><h2>Database file not loaded</h2>'+
+    '<p>The page could not read any bearing data. Check that <b>db.js</b> sits in the same folder as <b>index.html</b>, '+
+    'that it has not been renamed, and that index.html and db.js came from the <b>same download</b> &mdash; mixing an old db.js '+
+    'with a new index.html is the usual cause.</p></div>';
+  return;
+}
+$("#dbcount").innerHTML=DB.length+" ISO&nbsp;355 sizes loaded, series&nbsp;2&ndash;7."+
+  (DBFORMAT==="legacy"?' <b style="color:var(--est)">Old db.js format detected &mdash; still working, but replace it with the current db.js.</b>':"");
 
 /* opens on a real worked example */
 $("#in_d").value="30"; $("#in_D").value="62"; $("#in_T").value="17.25";
